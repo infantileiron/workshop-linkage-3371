@@ -22,7 +22,9 @@ def next_job():
         item.status = Status.RUNNING
         db.commit()
         try:
-            result = analyze(item.snapshot, item.parameters)
+            base = db.get(Analysis, item.base_id) if item.base_id else None
+            reference = {'snapshot': base.snapshot, 'result': base.result} if base and base.result else None
+            result = analyze(item.snapshot, item.parameters, reference)
             temp = Path(f'/artifacts/.linkage-{item.id}.tmp')
             temp.write_text(json.dumps(result, ensure_ascii=False))
             temp.replace(Path(f'/artifacts/linkage-{item.id}.json'))

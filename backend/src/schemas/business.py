@@ -31,6 +31,18 @@ class EnrollmentInput(CleanInput):
         return sorted(set(items))
 
 
+class SupplementInput(CleanInput):
+    version: int = Field(ge=1, le=1000000)
+    venue: str = Field(min_length=2, max_length=80)
+    state: Literal['confirmed', 'cancelled']
+    codes: list[str] = Field(max_length=30)
+
+    @field_validator('codes')
+    @classmethod
+    def unique_courses(cls, items):
+        return sorted(set(items))
+
+
 class AnalysisInput(CleanInput):
     title: str = Field(min_length=2, max_length=100)
     course_a: str = Field(max_length=32)

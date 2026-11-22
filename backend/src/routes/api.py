@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy import select
 
 from src.config.database import get_db
 from src.controllers.auth import current, login, manager, writable
 from src.controllers.export import export
 from src.models.entities import Analysis, Audit, Course, Enrollment
-from src.schemas.business import AnalysisInput, CourseInput, EnrollmentInput, Login, Publication
+from src.schemas.business import AnalysisInput, CourseInput, EnrollmentInput, Login, Publication, SupplementInput
 from src.services import business as svc
 
 router = APIRouter(prefix='/api')
@@ -44,6 +44,12 @@ def create_enrollment(data: EnrollmentInput, db=Depends(get_db), user=Depends(wr
     return svc.save_input(db, Enrollment, data, user)
 
 
+@router.post('/enrollments/{code}/supplement')
+def supplement_enrollment(data: SupplementInput, db=Depends(get_db), user=Depends(writable),
+                          code: str = Path(pattern=r'^[A-Za-z0-9-]{2,40}$')):
+    return svc.supplement(db, code, data, user)
+
+
 @router.get('/analyses')
 def analyses(db=Depends(get_db), user=Depends(current)):
     return [svc.record(item, ('snapshot', 'result')) for item in db.scalars(select(Analysis).order_by(Analysis.id.desc()))]
@@ -67,6 +73,11 @@ def download(id: int, db=Depends(get_db), user=Depends(current)):
 @router.post('/analyses/{id}/publish')
 def publish(id: int, data: Publication, db=Depends(get_db), user=Depends(manager)):
     return svc.publish(db, id, data.note, user)
+
+
+@router.post('/analyses/{id}/retry')
+def retry(id: int, db=Depends(get_db), user=Depends(writable)):
+    return svc.retry(db, id, user)
 
 
 @router.get('/audits')

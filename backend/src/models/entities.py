@@ -29,6 +29,7 @@ class Enrollment(Base):
     venue: Mapped[str] = mapped_column(String(80), index=True)
     state: Mapped[str] = mapped_column(String(12))
     codes: Mapped[list] = mapped_column(JSON)
+    version: Mapped[int] = mapped_column(default=1)
 
 
 class Analysis(Base):
@@ -39,6 +40,7 @@ class Analysis(Base):
     parameters: Mapped[dict] = mapped_column(JSON)
     snapshot: Mapped[list] = mapped_column(JSON)
     result: Mapped[dict | None] = mapped_column(JSON)
+    base_id: Mapped[int | None] = mapped_column(nullable=True)
     author_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     note: Mapped[str] = mapped_column(Text, default='')
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

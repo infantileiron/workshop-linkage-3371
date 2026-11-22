@@ -4,7 +4,7 @@ import {metrics} from '../components/common/metrics.js';
 import {table} from '../components/common/table.js';
 import {states} from '../constants/enums.js';
 import {onForm} from '../hooks/forms.js';
-import {session} from '../stores/session.js';
+import {canWrite, session} from '../stores/session.js';
 import {h} from '../utils/html.js';
 
 export async function reports(id) {
@@ -24,6 +24,9 @@ export async function reports(id) {
       if (session()?.role === 'manager' && run.status === 'completed') content += `<form id="publish-form"><label>签核意见<input name="note" required minlength="3"></label><button type="submit">签核排课建议</button><p role="alert"></p></form>`;
     } else {
       content += `<p>${h(run.note || 'Worker 正在读取锁定的报名快照，页面将自动刷新。')}</p>`;
+      if (run.status === 'failed' && canWrite()) {
+        content += `<button class="secondary" id="retry-run">按原快照重试（不新增复核单）</button><p id="retry-error" role="alert"></p>`;
+      }
     }
   }
   return {
@@ -42,6 +45,11 @@ export async function reports(id) {
           link.click();
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (error) { root.querySelector('#export-error').textContent = error.message; }
+      });
+      root.querySelector('#retry-run')?.addEventListener('click', async event => {
+        event.target.disabled = true;
+        try { await api.retry(run.id); refresh(); }
+        catch (error) { root.querySelector('#retry-error').textContent = error.message; event.target.disabled = false; }
       });
       onForm(root.querySelector('#publish-form'), async data => { await api.publish(run.id, data.note); refresh(); });
     }

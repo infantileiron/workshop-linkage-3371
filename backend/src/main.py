@@ -11,8 +11,17 @@ from src.routes.api import router
 from src.services.business import queue
 
 
+MIGRATIONS = (
+    'ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1',
+    'ALTER TABLE linkage_reviews ADD COLUMN IF NOT EXISTS base_id integer',
+)
+
+
 @asynccontextmanager
 async def lifespan(app):
+    with engine.begin() as connection:
+        for statement in MIGRATIONS:
+            connection.execute(text(statement))
     Base.metadata.create_all(engine)
     if os.getenv('SEED_DEMO', 'true').lower() == 'true':
         try:
